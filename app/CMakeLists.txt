@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.4.1)
+set(CPP_DIR src/main/cpp)
 add_library( native-lib
              SHARED
-             src/main/cpp/native-lib.cpp
+             ${CPP_DIR}/native-lib.cpp
+             ${CPP_DIR}/video-player.cpp
               )
 
 find_library( log-lib
