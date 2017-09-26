@@ -66,4 +66,5 @@ target_link_libraries( native-lib
                        postproc-53
                        swresample-1
                        swscale-3
+                       android
                        ${log-lib} )

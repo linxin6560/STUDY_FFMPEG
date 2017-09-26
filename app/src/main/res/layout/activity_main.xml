@@ -12,4 +12,15 @@
         android:onClick="click2transform"
         android:text="格式转换" />
 
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="click2play"
+        android:text="点击播放" />
+
+    <com.levylin.study_ffmpeg.VideoView
+        android:id="@+id/videoView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
 </LinearLayout>

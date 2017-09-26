@@ -20,11 +20,13 @@ public class MainActivity extends AppCompatActivity {
         System.loadLibrary("swscale-3");
     }
 
+    private VideoView videoView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        videoView = (VideoView) findViewById(R.id.videoView);
     }
 
 
@@ -35,4 +37,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static native void transform(String input, String output);
+
+    public void click2play(View view) {
+        String inputPath = Environment.getExternalStorageDirectory().getPath() + "/input.mp4";
+        videoView.play(inputPath);
+    }
 }
