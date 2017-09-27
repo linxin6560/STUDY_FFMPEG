@@ -38,8 +38,14 @@ public class MainActivity extends AppCompatActivity {
 
     public static native void transform(String input, String output);
 
-    public void click2play(View view) {
+    public void click2play_video(View view) {
         String inputPath = Environment.getExternalStorageDirectory().getPath() + "/input.mp4";
         videoView.play(inputPath);
+    }
+
+    public void click2play_audio(View view) {
+        String inputPath = Environment.getExternalStorageDirectory().getPath() + "/input.mp3";
+        MusicPlayer player = new MusicPlayer();
+        player.sound(inputPath);
     }
 }

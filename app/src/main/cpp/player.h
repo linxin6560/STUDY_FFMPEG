@@ -10,11 +10,13 @@ extern "C" {
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
+#include "libswresample/swresample.h"
 #include <android/native_window_jni.h>
 #include <unistd.h>
 };
 
-int initContext(AVFormatContext **formatContext, const char *input, AVCodecContext **pCodecContext,
-                AVCodec **pAVCodec, AVPacket **pPacket);
+int initVideoContext(AVFormatContext **formatContext, const char *input,
+                     AVCodecContext **pCodecContext,
+                     AVCodec **pAVCodec, AVPacket **pPacket, enum AVMediaType type);
 
 #endif //STUDY_FFMPEG_VIDEO_PLAYER_H

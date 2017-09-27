@@ -1,7 +1,7 @@
 #include <jni.h>
 #include <string>
 #include "my_log.h"
-#include "video-player.h"
+#include "player.h"
 
 extern "C" {
 JNIEXPORT void JNICALL
@@ -18,7 +18,7 @@ Java_com_levylin_study_1ffmpeg_MainActivity_transform(JNIEnv *env, jclass type, 
     //获取解码器
     AVCodec *codec;
     AVPacket *packet;
-    initContext(&formatContext, input, &codecContext, &codec, &packet);
+    initVideoContext(&formatContext, input, &codecContext, &codec, &packet, AVMEDIA_TYPE_VIDEO);
     //分配内存
     LOGE("创建和初始化yuvFrame成功");
     FILE *outFile = fopen(output, "wb");
@@ -74,13 +74,12 @@ Java_com_levylin_study_1ffmpeg_VideoView_render(JNIEnv *env, jobject instance, j
     //获取解码器
     AVCodec *codec;
     AVPacket *pPacket;
-    int result = initContext(&formatContext, input, &videoContext, &codec, &pPacket);
+    int result = initVideoContext(&formatContext, input, &videoContext, &codec, &pPacket,
+                                  AVMEDIA_TYPE_VIDEO);
     if (result < 0) {
         LOGE("视频初始化失败:%d", result);
         return;
     }
-    //源视频帧
-    AVFrame *videoFrame = av_frame_alloc();
     LOGE("开始获取swsContext");
     SwsContext *swsContext = sws_getContext(videoContext->width, videoContext->height,
                                             videoContext->pix_fmt,
@@ -98,9 +97,11 @@ Java_com_levylin_study_1ffmpeg_VideoView_render(JNIEnv *env, jobject instance, j
             (size_t) avpicture_get_size(AV_PIX_FMT_RGBA, videoContext->width,
                                         videoContext->height));
     avpicture_fill((AVPicture *) rgbFrame, out_buffer, AV_PIX_FMT_RGBA,
-                            videoContext->width,
-                            videoContext->height);
+                   videoContext->width,
+                   videoContext->height);
     LOGE("开始播放");
+    //源视频帧
+    AVFrame *videoFrame = av_frame_alloc();
     int got_video_frame = 0;
     while (av_read_frame(formatContext, pPacket) >= 0) {
         avcodec_decode_video2(videoContext, videoFrame, &got_video_frame, pPacket);
@@ -140,9 +141,67 @@ Java_com_levylin_study_1ffmpeg_VideoView_render(JNIEnv *env, jobject instance, j
 JNIEXPORT void JNICALL
 Java_com_levylin_study_1ffmpeg_MusicPlayer_sound(JNIEnv *env, jobject instance, jstring input_) {
     const char *input = env->GetStringUTFChars(input_, 0);
+    av_register_all();//ffmpeg代码必须调用
+    AVFormatContext *formatContext;
+    //获取上下文
+    AVCodecContext *audioContext;
+    //获取解码器
+    AVCodec *codec;
+    AVPacket *pPacket;
+    int result = initVideoContext(&formatContext, input, &audioContext, &codec, &pPacket,
+                                  AVMEDIA_TYPE_AUDIO);
+    if (result < 0) {
+        LOGE("初始化音频上下文失败");
+    }
+    //初始化swr context
+    SwrContext *swrContext = swr_alloc();
+    uint64_t out_ch_layout = AV_CH_LAYOUT_STEREO;
+    enum AVSampleFormat out_format = AV_SAMPLE_FMT_S16;
+    int out_sample_rate = audioContext->sample_rate;
+    swr_alloc_set_opts(swrContext, out_ch_layout, out_format, out_sample_rate,
+                       audioContext->channel_layout, audioContext->sample_fmt,
+                       audioContext->sample_rate, 0,
+                       NULL);
+    swr_init(swrContext);
 
-    // TODO
+    //读音频
+    AVFrame *originFrame = av_frame_alloc();
+    int got_frame = -1;
+    uint8_t *out_buffer = (uint8_t *) av_malloc(44100 * 2);
+    //    获取通道数  2
+    int out_channer_nb = av_get_channel_layout_nb_channels(out_ch_layout);
+//    反射得到Class类型
+    jclass david_player = env->GetObjectClass(instance);
+//    反射得到createAudio方法
+    jmethodID createAudio = env->GetMethodID(david_player, "createAudio", "(II)V");
+//    反射调用createAudio
+    env->CallVoidMethod(instance, createAudio, 44100, out_channer_nb);
+    jmethodID audio_write = env->GetMethodID(david_player, "playTrack", "([BI)V");
 
+    while (av_read_frame(formatContext, pPacket) >= 0) {
+//            解码  mp3   编码格式frame----pcm   frame
+        avcodec_decode_audio4(audioContext, originFrame, &got_frame, pPacket);
+        if (got_frame) {
+            LOGE("解码");
+            /**
+             * int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
+                            const uint8_t **in , int in_count);
+             */
+            swr_convert(swrContext, &out_buffer, 44100 * 2, (const uint8_t **) originFrame->data,
+                        originFrame->nb_samples);
+//                缓冲区的大小
+            int size = av_samples_get_buffer_size(NULL, out_channer_nb, originFrame->nb_samples,
+                                                  AV_SAMPLE_FMT_S16, 1);
+            jbyteArray audio_sample_array = env->NewByteArray(size);
+            env->SetByteArrayRegion(audio_sample_array, 0, size, (const jbyte *) out_buffer);
+            env->CallVoidMethod(instance, audio_write, audio_sample_array, size);
+            env->DeleteLocalRef(audio_sample_array);
+        }
+    }
+    av_frame_free(&originFrame);
+    swr_free(&swrContext);
+    avcodec_close(audioContext);
+    avformat_close_input(&formatContext);
     env->ReleaseStringUTFChars(input_, input);
 }
 

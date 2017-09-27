@@ -2,11 +2,12 @@
 // Created by Administrator on 2017/9/26.
 //
 
-#include "video-player.h"
+#include "player.h"
 #include "my_log.h"
 
-int initContext(AVFormatContext **formatContext, const char *input, AVCodecContext **pCodecContext,
-                AVCodec **pAVCodec,AVPacket **pPacket) {
+int initVideoContext(AVFormatContext **formatContext, const char *input,
+                     AVCodecContext **pCodecContext,
+                     AVCodec **pAVCodec, AVPacket **pPacket,enum AVMediaType type) {
     LOGE("input=%s", input);
     *formatContext = avformat_alloc_context();
     int result = avformat_open_input(formatContext, input, NULL, NULL);
@@ -24,7 +25,7 @@ int initContext(AVFormatContext **formatContext, const char *input, AVCodecConte
     for (int i = 0; i < (*formatContext)->nb_streams; ++i) {
         LOGE("循环 %d", i);
         //特别注意，这里的codec_type千万别打成coder_type
-        if ((*formatContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if ((*formatContext)->streams[i]->codec->codec_type == type) {
             video_stream_index = i;
         }
     }

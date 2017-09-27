@@ -3,7 +3,7 @@ set(CPP_DIR src/main/cpp)
 add_library( native-lib
              SHARED
              ${CPP_DIR}/native-lib.cpp
-             ${CPP_DIR}/video-player.cpp
+             ${CPP_DIR}/player.cpp
               )
 
 find_library( log-lib

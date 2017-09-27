@@ -15,8 +15,14 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:onClick="click2play"
-        android:text="点击播放" />
+        android:onClick="click2play_video"
+        android:text="点击播放视频" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="click2play_audio"
+        android:text="点击播放音频" />
 
     <com.levylin.study_ffmpeg.VideoView
         android:id="@+id/videoView"
