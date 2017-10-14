@@ -1,10 +1,9 @@
 package com.levylin.study_ffmpeg;
 
+import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.View;
-import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -21,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private VideoView videoView;
+    private OpenSLESPlayer player = new OpenSLESPlayer();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,5 +47,24 @@ public class MainActivity extends AppCompatActivity {
         String inputPath = Environment.getExternalStorageDirectory().getPath() + "/input.mp3";
         MusicPlayer player = new MusicPlayer();
         player.sound(inputPath);
+    }
+
+    public void click2play_audio_by_opensles(View view) {
+        String inputPath = Environment.getExternalStorageDirectory().getPath() + "/input.mp3";
+        player.play(inputPath);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (player != null) {
+            player.shutdown();
+        }
+    }
+
+    public void click2stop_audio_by_opensles(View view) {
+        if (player != null) {
+            player.shutdown();
+        }
     }
 }
