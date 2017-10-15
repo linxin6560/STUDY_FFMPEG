@@ -4,6 +4,7 @@ MESSAGE("CPP_DIR路径  " ${CPP_DIR})
 add_library( native-lib
              SHARED
              ${CPP_DIR}/native-lib.cpp
+             ${CPP_DIR}/ffmpeg-player.cpp
              ${CPP_DIR}/FFMpegMusic.cpp
              ${CPP_DIR}/player.cpp
               )
