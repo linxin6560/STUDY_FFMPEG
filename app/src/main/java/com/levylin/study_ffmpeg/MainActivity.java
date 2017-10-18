@@ -1,5 +1,6 @@
 package com.levylin.study_ffmpeg;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
@@ -66,5 +67,9 @@ public class MainActivity extends AppCompatActivity {
         if (player != null) {
             player.shutdown();
         }
+    }
+
+    public void openTv(View view) {
+        startActivity(new Intent(this, TVActivity.class));
     }
 }

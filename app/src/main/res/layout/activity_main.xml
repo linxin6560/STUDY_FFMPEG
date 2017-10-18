@@ -36,6 +36,12 @@
         android:onClick="click2stop_audio_by_opensles"
         android:text="点击停止音频(OPENSLES)" />
 
+    <Button
+        android:onClick="openTv"
+        android:text="打开电视台"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
     <com.levylin.study_ffmpeg.VideoView
         android:id="@+id/videoView"
         android:layout_width="match_parent"
