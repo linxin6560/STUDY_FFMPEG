@@ -13,7 +13,8 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libswresample/swresample.h>
 #include <libavformat/avformat.h>
-}
+#include <SLES/OpenSLES.h>
+#include <SLES/OpenSLES_Android.h>
 
 class FFMpegAudio {
 
@@ -32,6 +33,8 @@ public:
 
     void setAVCodecContext(AVCodecContext *avCodecContext);
 
+    int createPlayer();
+
 public:
     //是否播放
     int isPlay;
@@ -47,6 +50,19 @@ public:
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 
-};
+    SwrContext *swrContext;
+    uint8_t *out_buffer;
 
+
+    SLObjectItf engineObject;
+    SLEngineItf slEngineItf;
+    SLObjectItf outputMix;
+    SLEnvironmentalReverbItf environment;
+    SLEnvironmentalReverbSettings settings;
+    SLObjectItf bqPlayerObject;
+    SLPlayItf bqPlayerItf;
+    SLAndroidSimpleBufferQueueItf bqPlayQueue;//缓冲区
+    SLVolumeItf volumeItf;//音量对象
+};
+};
 #endif //STUDY_FFMPEG_FFMPEGAUDIO_H

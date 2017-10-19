@@ -63,7 +63,7 @@ void *proccess(void *args) {
         ret = av_read_frame(formatContext, packet);
         if (ret >= 0) {
             if (video && video->isPlay && packet->stream_index == video->index) {
-                video->put(packet);
+//                video->put(packet);
             } else if (audio && audio->isPlay && packet->stream_index == audio->index) {
                 audio->put(packet);
             }
@@ -83,7 +83,7 @@ void *proccess(void *args) {
     pthread_exit(0);//不加会崩溃
 }
 
-extern "C" {
+extern "C"
 JNIEXPORT void JNICALL
 Java_com_levylin_study_1ffmpeg_TVPlayer_player(JNIEnv *env, jobject instance) {
 
@@ -91,6 +91,7 @@ Java_com_levylin_study_1ffmpeg_TVPlayer_player(JNIEnv *env, jobject instance) {
 
 }
 
+extern "C"
 JNIEXPORT void JNICALL
 Java_com_levylin_study_1ffmpeg_TVPlayer_play(JNIEnv *env, jobject instance, jstring path_) {
     path = env->GetStringUTFChars(path_, 0);
@@ -104,6 +105,7 @@ Java_com_levylin_study_1ffmpeg_TVPlayer_play(JNIEnv *env, jobject instance, jstr
     env->ReleaseStringUTFChars(path_, path);
 }
 
+extern "C"
 JNIEXPORT void JNICALL
 Java_com_levylin_study_1ffmpeg_TVPlayer_stop(JNIEnv *env, jobject instance) {
 
@@ -111,6 +113,7 @@ Java_com_levylin_study_1ffmpeg_TVPlayer_stop(JNIEnv *env, jobject instance) {
 
 }
 
+extern "C"
 JNIEXPORT void JNICALL
 Java_com_levylin_study_1ffmpeg_TVPlayer_release(JNIEnv *env, jobject instance) {
 
@@ -118,10 +121,10 @@ Java_com_levylin_study_1ffmpeg_TVPlayer_release(JNIEnv *env, jobject instance) {
 
 }
 
+extern "C"
 JNIEXPORT void JNICALL
 Java_com_levylin_study_1ffmpeg_TVPlayer_display(JNIEnv *env, jobject instance, jobject holder) {
 
 // TODO
 
-}
 }
