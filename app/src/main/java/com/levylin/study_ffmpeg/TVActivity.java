@@ -1,11 +1,8 @@
 package com.levylin.study_ffmpeg;
 
-import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.view.Surface;
-import android.view.SurfaceView;
 import android.view.View;
 
 /**
@@ -28,5 +25,12 @@ public class TVActivity extends AppCompatActivity {
     }
 
     public void stop(View view) {
+        player.stop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        player.stop();
     }
 }

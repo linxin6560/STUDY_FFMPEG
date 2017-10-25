@@ -90,7 +90,7 @@ void *proccess(void *args) {
     LOGE("解码结束");
 
     video->play();
-//    audio->play();
+    audio->play();
     isPlay = 1;
     AVPacket *packet = (AVPacket *) av_malloc(sizeof(AVPacket));
     int ret;
@@ -100,7 +100,7 @@ void *proccess(void *args) {
             if (video && video->isPlay && packet->stream_index == video->index) {
                 video->put(packet);
             } else if (audio && audio->isPlay && packet->stream_index == audio->index) {
-//                audio->put(packet);
+                audio->put(packet);
             }
         }
         av_packet_unref(packet);
@@ -120,14 +120,6 @@ void *proccess(void *args) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_levylin_study_1ffmpeg_TVPlayer_player(JNIEnv *env, jobject instance) {
-
-// TODO
-
-}
-
-extern "C"
-JNIEXPORT void JNICALL
 Java_com_levylin_study_1ffmpeg_TVPlayer_play(JNIEnv *env, jobject instance, jstring path_) {
     path = env->GetStringUTFChars(path_, 0);
 
@@ -135,6 +127,7 @@ Java_com_levylin_study_1ffmpeg_TVPlayer_play(JNIEnv *env, jobject instance, jstr
     video = new FFMpegVideo;
 
     video->setPlayCall(call_video_play);
+    video->setAudio(audio);
 
     pthread_create(&p_tid, NULL, proccess, NULL);
 
@@ -144,17 +137,24 @@ Java_com_levylin_study_1ffmpeg_TVPlayer_play(JNIEnv *env, jobject instance, jstr
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_levylin_study_1ffmpeg_TVPlayer_stop(JNIEnv *env, jobject instance) {
-
-// TODO
-
-}
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_levylin_study_1ffmpeg_TVPlayer_release(JNIEnv *env, jobject instance) {
-
-// TODO
-
+    if (isPlay) {
+        isPlay = 0;
+        pthread_join(p_tid, 0);
+    }
+    if (video) {
+        if (video->isPlay) {
+            video->stop();
+        }
+        delete (video);
+        video = 0;
+    }
+    if (audio) {
+        if (audio->isPlay) {
+            audio->stop();
+        }
+        delete (audio);
+        audio = 0;
+    }
 }
 
 extern "C"

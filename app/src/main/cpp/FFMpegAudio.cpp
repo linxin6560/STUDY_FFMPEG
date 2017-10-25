@@ -38,11 +38,11 @@ int getPCM(FFMpegAudio *audio) {
 //            解码  mp3   编码格式frame----pcm   frame
         audio->get(pPacket);
         LOGE("获取packet成功");
-        avcodec_decode_audio4(audio->codec, frame, &got_frame, pPacket);
         if (pPacket->pts != AV_NOPTS_VALUE) {
             audio->clock = pPacket->pts * av_q2d(audio->time_base);
+            LOGE("audio->clock=%lf", audio->clock);
         }
-        LOGE("got_frame:%d", got_frame);
+        avcodec_decode_audio4(audio->codec, frame, &got_frame, pPacket);
         if (got_frame) {
             LOGE("解码");
             swr_convert(audio->swrContext, &audio->out_buffer, 44100 * 2,
@@ -71,8 +71,9 @@ void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
     FFMpegAudio *audio = (FFMpegAudio *) context;
     int size = getPCM(audio);
     LOGE("getPCM.size=%d", size);
-    double time = size / ((double) size / 44100 * 2 * 2);
+    double time = size / ((double)44100 * 2 * 2);
     audio->clock += time;
+    LOGE("当前一帧声音时间%f   播放时间%f", time, audio->clock);
     if (size > 0) {
         int result = (*bq)->Enqueue(bq, audio->out_buffer, (SLuint32) size);
         LOGE("播放result=%d", result);
@@ -131,7 +132,44 @@ void FFMpegAudio::play() {
 }
 
 void FFMpegAudio::stop() {
+    LOGE("声音暂停");
+    //因为可能卡在 deQueue
+    pthread_mutex_lock(&mutex);
+    isPlay = 0;
+    pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&mutex);
+    pthread_join(t_playid, 0);
+    if (bqPlayerItf) {
+        (*bqPlayerItf)->SetPlayState(bqPlayerItf, SL_PLAYSTATE_STOPPED);
+        bqPlayerItf = 0;
+    }
+    if (bqPlayerObject) {
+        (*bqPlayerObject)->Destroy(bqPlayerObject);
+        bqPlayerObject = 0;
 
+        bqPlayQueue = 0;
+        volumeItf = 0;
+    }
+
+    if (outputMix) {
+        (*outputMix)->Destroy(outputMix);
+        outputMix = 0;
+    }
+
+    if (engineObject) {
+        (*engineObject)->Destroy(engineObject);
+        engineObject = 0;
+        engineObject = 0;
+    }
+    if (swrContext)
+        swr_free(&swrContext);
+    if (this->codec) {
+        if (avcodec_is_open(this->codec))
+            avcodec_close(this->codec);
+        avcodec_free_context(&this->codec);
+        this->codec = 0;
+    }
+    LOGE("AUDIO clear");
 }
 
 void FFMpegAudio::setAVCodecContext(AVCodecContext *avCodecContext) {

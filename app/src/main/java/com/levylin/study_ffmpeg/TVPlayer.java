@@ -37,13 +37,11 @@ public class TVPlayer extends SurfaceView implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        Log.e("LEVY", "surfaceCreated...");
         display(surfaceHolder.getSurface());
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-        Log.e("LEVY", "surfaceChanged...");
         display(surfaceHolder.getSurface());
     }
 
@@ -52,13 +50,9 @@ public class TVPlayer extends SurfaceView implements SurfaceHolder.Callback {
 
     }
 
-    public native void player();
-
     public native void play(String path);
 
     public native void stop();
-
-    public native void release();
 
     public native void display(Surface surface);
 }

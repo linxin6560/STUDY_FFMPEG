@@ -7,6 +7,7 @@
 
 #include <pthread.h>
 #include "my_log.h"
+#include "FFMpegAudio.h"
 #include <queue>
 #include <unistd.h>
 
@@ -37,6 +38,10 @@ public:
 
     void setPlayCall(void(*call)(AVFrame *frame));
 
+    double synchronize(AVFrame *frame, double play);
+
+    void setAudio(FFMpegAudio *audio);
+
 public:
     //是否播放
     int isPlay;
@@ -53,6 +58,9 @@ public:
     pthread_cond_t cond;
 
     AVRational time_base;
+    //头文件写在"extend"C外
+    FFMpegAudio* audio;
+    double  clock;
 };
 
 
