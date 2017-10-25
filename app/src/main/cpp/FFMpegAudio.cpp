@@ -8,6 +8,7 @@
 FFMpegAudio::FFMpegAudio() {
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&cond, NULL);
+    clock = 0;
 }
 
 FFMpegAudio::~FFMpegAudio() {
@@ -38,6 +39,9 @@ int getPCM(FFMpegAudio *audio) {
         audio->get(pPacket);
         LOGE("获取packet成功");
         avcodec_decode_audio4(audio->codec, frame, &got_frame, pPacket);
+        if (pPacket->pts != AV_NOPTS_VALUE) {
+            audio->clock = pPacket->pts * av_q2d(audio->time_base);
+        }
         LOGE("got_frame:%d", got_frame);
         if (got_frame) {
             LOGE("解码");
@@ -65,10 +69,12 @@ int getPCM(FFMpegAudio *audio) {
 void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
     LOGE("=================bqPlayerCallback====================");
     FFMpegAudio *audio = (FFMpegAudio *) context;
-    int datalen = getPCM(audio);
-    LOGE("getPCM.datalen=%d", datalen);
-    if (datalen > 0) {
-        int result = (*bq)->Enqueue(bq, audio->out_buffer, (SLuint32) datalen);
+    int size = getPCM(audio);
+    LOGE("getPCM.size=%d", size);
+    double time = size / ((double) size / 44100 * 2 * 2);
+    audio->clock += time;
+    if (size > 0) {
+        int result = (*bq)->Enqueue(bq, audio->out_buffer, (SLuint32) size);
         LOGE("播放result=%d", result);
     }
 }

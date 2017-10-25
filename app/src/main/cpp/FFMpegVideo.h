@@ -8,11 +8,14 @@
 #include <pthread.h>
 #include "my_log.h"
 #include <queue>
+#include <unistd.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
 #include <libavformat/avformat.h>
+#include <libavutil/imgutils.h>
+#include <libavutil/time.h>
 }
 
 class FFMpegVideo {
@@ -32,6 +35,8 @@ public:
 
     void setAVCodecContext(AVCodecContext *avCodecContext);
 
+    void setPlayCall(void(*call)(AVFrame *frame));
+
 public:
     //是否播放
     int isPlay;
@@ -47,6 +52,7 @@ public:
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 
+    AVRational time_base;
 };
 
 

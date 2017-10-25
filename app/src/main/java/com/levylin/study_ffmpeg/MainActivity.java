@@ -40,7 +40,8 @@ public class MainActivity extends AppCompatActivity {
     public static native void transform(String input, String output);
 
     public void click2play_video(View view) {
-        String inputPath = Environment.getExternalStorageDirectory().getPath() + "/input.mp4";
+//        String inputPath = Environment.getExternalStorageDirectory().getPath() + "/input.mp4";
+        String inputPath = "rtmp://live.hkstv.hk.lxdns.com/live/hks";
         videoView.play(inputPath);
     }
 

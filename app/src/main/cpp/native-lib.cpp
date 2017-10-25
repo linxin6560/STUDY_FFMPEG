@@ -68,6 +68,7 @@ Java_com_levylin_study_1ffmpeg_VideoView_render(JNIEnv *env, jobject instance, j
                                                 jobject surface) {
     const char *input = env->GetStringUTFChars(input_, 0);
     av_register_all();//ffmpeg代码必须调用
+    avformat_network_init();
     AVFormatContext *formatContext;
     //获取上下文
     AVCodecContext *videoContext;
@@ -108,11 +109,13 @@ Java_com_levylin_study_1ffmpeg_VideoView_render(JNIEnv *env, jobject instance, j
         LOGE("播放视频:%d", got_video_frame);
         if (got_video_frame > 0) {
             sws_scale(swsContext, (const uint8_t *const *) videoFrame->data,
-                      videoFrame->linesize, 0,
-                      videoFrame->height, rgbFrame->data, rgbFrame->linesize);
+                                             videoFrame->linesize, 0,
+                                             videoFrame->height, rgbFrame->data, rgbFrame->linesize);
             //绘制之前配置一些信息：宽高，格式
             ANativeWindow_setBuffersGeometry(nativeWindow, videoContext->width,
                                              videoContext->height, WINDOW_FORMAT_RGBA_8888);
+            LOGE("ANativeWindow_setBuffersGeometry width=%d,height=%d", videoContext->width,
+                 videoContext->height);
             ANativeWindow_lock(nativeWindow, &buffer, NULL);
             //取window的首地址
             uint8_t *dst = (uint8_t *) buffer.bits;
@@ -122,6 +125,8 @@ Java_com_levylin_study_1ffmpeg_VideoView_render(JNIEnv *env, jobject instance, j
             uint8_t *src = rgbFrame->data[0];
             //实际一行内存数量
             int srcStride = rgbFrame->linesize[0];
+            LOGE("VideoView...dstStride=%d,srcStride=%d,height=%d", dstStride, srcStride,
+                 videoContext->height);
             for (int i = 0; i < videoContext->height; ++i) {
                 memcpy(dst + i * dstStride, src + i * srcStride, (size_t) srcStride);
             }

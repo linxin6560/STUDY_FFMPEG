@@ -3,7 +3,9 @@
 //
 #include <jni.h>
 #include <string>
-#include <unistd.h>
+#include <android/native_window.h>
+#include <android/native_window_jni.h>
+
 #include "FFMpegAudio.h"
 #include "FFMpegVideo.h"
 
@@ -12,6 +14,38 @@ FFMpegAudio *audio;
 FFMpegVideo *video;
 pthread_t p_tid;
 int isPlay;
+
+ANativeWindow *window;
+
+void call_video_play(AVFrame *frame) {
+    if (!window) {
+        LOGE("window is null");
+        return;
+    }
+    ANativeWindow_setBuffersGeometry(window, video->codec->width,
+                                     video->codec->height, WINDOW_FORMAT_RGBA_8888);
+    LOGE("ANativeWindow_setBuffersGeometry width=%d,height=%d", video->codec->width,
+         video->codec->height);
+    ANativeWindow_Buffer buffer;
+    if (ANativeWindow_lock(window, &buffer, NULL)) {
+        LOGE("window lock fail");
+        return;
+    }
+    //取window的首地址
+    uint8_t *dst = (uint8_t *) buffer.bits;
+    //一行有多少字节
+    int dstStride = buffer.stride * 4;
+    //像素数据首地址
+    uint8_t *src = frame->data[0];
+    //实际一行内存数量
+    int srcStride = frame->linesize[0];
+    LOGE("TVPlayer...dstStride=%d,srcStride=%d,height=%d", dstStride, srcStride,
+         video->codec->height);
+    for (int i = 0; i < video->codec->height; ++i) {
+        memcpy(dst + i * dstStride, src + i * srcStride, (size_t) srcStride);
+    }
+    ANativeWindow_unlockAndPost(window);
+}
 
 void *proccess(void *args) {
     LOGE("开始播放");
@@ -45,27 +79,28 @@ void *proccess(void *args) {
         LOGE("解码成功");
         if (type == AVMEDIA_TYPE_AUDIO) {
             audio->setAVCodecContext(codecContext);
+            audio->time_base = formatContext->streams[i]->time_base;
             audio->index = i;
         } else if (type == AVMEDIA_TYPE_VIDEO) {
             video->setAVCodecContext(codecContext);
+            video->time_base = formatContext->streams[i]->time_base;
             video->index = i;
         }
     }
     LOGE("解码结束");
 
     video->play();
-    audio->play();
+//    audio->play();
     isPlay = 1;
     AVPacket *packet = (AVPacket *) av_malloc(sizeof(AVPacket));
-
     int ret;
     while (isPlay) {
         ret = av_read_frame(formatContext, packet);
         if (ret >= 0) {
             if (video && video->isPlay && packet->stream_index == video->index) {
-//                video->put(packet);
+                video->put(packet);
             } else if (audio && audio->isPlay && packet->stream_index == audio->index) {
-                audio->put(packet);
+//                audio->put(packet);
             }
         }
         av_packet_unref(packet);
@@ -99,6 +134,7 @@ Java_com_levylin_study_1ffmpeg_TVPlayer_play(JNIEnv *env, jobject instance, jstr
     audio = new FFMpegAudio;
     video = new FFMpegVideo;
 
+    video->setPlayCall(call_video_play);
 
     pthread_create(&p_tid, NULL, proccess, NULL);
 
@@ -123,8 +159,12 @@ Java_com_levylin_study_1ffmpeg_TVPlayer_release(JNIEnv *env, jobject instance) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_levylin_study_1ffmpeg_TVPlayer_display(JNIEnv *env, jobject instance, jobject holder) {
+Java_com_levylin_study_1ffmpeg_TVPlayer_display(JNIEnv *env, jobject instance, jobject surface) {
 
-// TODO
-
+    if (window) {
+        ANativeWindow_release(window);
+        window = 0;
+    }
+    window = ANativeWindow_fromSurface(env, surface);
+    LOGE("ANativeWindow_fromSurface success");
 }

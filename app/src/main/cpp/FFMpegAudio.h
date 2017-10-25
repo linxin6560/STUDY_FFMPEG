@@ -53,6 +53,8 @@ public:
     SwrContext *swrContext;
     uint8_t *out_buffer;
 
+    double clock;//第一帧音频帧走过的时间，实时更新
+    AVRational time_base;//
 
     SLObjectItf engineObject;
     SLEngineItf slEngineItf;

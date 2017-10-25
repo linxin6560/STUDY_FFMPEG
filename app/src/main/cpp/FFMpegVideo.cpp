@@ -13,6 +13,8 @@ FFMpegVideo::~FFMpegVideo() {
 
 }
 
+static void (*video_call)(AVFrame *frame);
+
 int FFMpegVideo::get(AVPacket *packet) {
     pthread_mutex_lock(&mutex);
     while (isPlay) {
@@ -52,41 +54,61 @@ int FFMpegVideo::put(AVPacket *packet) {
 }
 
 void *play_video(void *args) {
-    LOGE("开启视频线程");
     FFMpegVideo *video = (FFMpegVideo *) args;
-    AVPacket *pPacket = (AVPacket *) av_malloc(sizeof(AVPacket));
-    //初始化结构体
-    av_init_packet(pPacket);
-    LOGE("创建并初始化AVPacket成功");
+    //像素数据（解码数据）
     AVFrame *frame = av_frame_alloc();
-    //声明一个yuvFrame
-    AVFrame *rgb_frame = av_frame_alloc();
-    //yuvFrame中缓存区的初始化
-    uint8_t *out_buffer = (uint8_t *) av_malloc(
-            (size_t) avpicture_get_size(AV_PIX_FMT_YUV420P,
-                                        video->codec->width,
-                                        video->codec->height));
-    avpicture_fill((AVPicture *) rgb_frame, out_buffer, AV_PIX_FMT_YUV420P,
-                   video->codec->width,
-                   video->codec->height);
-    LOGE("开始获取swsContext");
-    SwsContext *swsContext = sws_getContext(video->codec->width, video->codec->height,
+
+    //转换rgba
+    SwsContext *swsContext = sws_getContext(video->codec->width,
+                                            video->codec->height,
                                             video->codec->pix_fmt,
-                                            video->codec->width, video->codec->height,
+                                            video->codec->width,
+                                            video->codec->height,
                                             AV_PIX_FMT_RGBA,
                                             SWS_BICUBIC, NULL, NULL, NULL);
-    int got_frame = -1;
+
+    AVFrame *rgb_frame = av_frame_alloc();
+    uint8_t *out_buffer = (uint8_t *) av_malloc(
+            (size_t) avpicture_get_size(AV_PIX_FMT_RGBA, video->codec->width,
+                                        video->codec->height));
+    avpicture_fill((AVPicture *) rgb_frame, out_buffer, AV_PIX_FMT_RGBA,
+                   video->codec->width,
+                   video->codec->height);
+    int got_frame;
+    LOGE("宽  %d ,高  %d ", video->codec->width, video->codec->height);
+    //编码数据
+    AVPacket *packet = (AVPacket *) av_malloc(sizeof(AVPacket));
+    av_init_packet(packet);
     while (video->isPlay) {
-        video->get(pPacket);
-        LOGE("消费一帧视频数据,queue.size=%d",video->queue.size());
-        avcodec_decode_video2(video->codec, frame, &got_frame, pPacket);
-        if (got_frame) {
-            sws_scale(swsContext, (const uint8_t *const *) frame->data,
-                      frame->linesize, 0,
-                      frame->height, rgb_frame->data, rgb_frame->linesize);
+        LOGE("视频 解码  一帧 %d", video->queue.size());
+//        消费者取到一帧数据  没有 阻塞
+        video->get(packet);
+        avcodec_decode_video2(video->codec, frame, &got_frame, packet);
+        if (!got_frame) {
+            continue;
         }
+//        转码成rgb
+        sws_scale(swsContext, (const uint8_t *const *) frame->data, frame->linesize, 0,
+                                     frame->height,
+                                     rgb_frame->data, rgb_frame->linesize);
+        av_usleep(16 * 1000);
+        video_call(rgb_frame);
+        av_packet_unref(packet);
     }
-    LOGE("视频播放结束");
+    LOGE("free packet");
+    av_free(packet);
+    LOGE("free packet ok");
+    LOGE("free packet");
+    av_frame_free(&frame);
+    av_frame_free(&rgb_frame);
+    sws_freeContext(swsContext);
+    size_t size = video->queue.size();
+    for (int i = 0; i < size; ++i) {
+        AVPacket *pkt = video->queue.front();
+        av_free(pkt);
+        video->queue.pop();
+    }
+    LOGE("VIDEO EXIT");
     pthread_exit(0);
 }
 
@@ -101,4 +123,8 @@ void FFMpegVideo::stop() {
 
 void FFMpegVideo::setAVCodecContext(AVCodecContext *avCodecContext) {
     codec = avCodecContext;
+}
+
+void FFMpegVideo::setPlayCall(void (*call)(AVFrame *)) {
+    video_call = call;
 }
